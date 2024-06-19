@@ -83,13 +83,36 @@ type context struct {
 	branches []Branch
 }
 
+// addImport 添加一个新的导入语句到文件的AST中
+func addImport(f *ast.File, pkgPath string) {
+	// 创建一个新的导入声明
+	importSpec := &ast.ImportSpec{
+		Path: &ast.BasicLit{
+			Kind:  token.STRING,
+			Value: "\"" + pkgPath + "\"",
+		},
+	}
+
+	// 创建一个新的导入声明（import declaration）
+	importDecl := &ast.GenDecl{
+		Tok: token.IMPORT,
+		Specs: []ast.Spec{
+			importSpec,
+		},
+	}
+
+	// 将新的导入声明添加到文件的声明列表中
+	f.Decls = append([]ast.Decl{importDecl}, f.Decls...)
+}
+
 func Instrument(name string, fd *os.File, coverVar string) error {
 	// Create the AST by parsing src.
 	fset := token.NewFileSet() // positions are relative to fset
-	f, err := parser.ParseFile(fset, name, nil, 0)
+	f, err := parser.ParseFile(fset, name, nil, parser.ParseComments)
 	if err != nil {
 		return err
 	}
+	//addImport(f, "runtime/coverage")
 
 	ctx := context{
 		file: f,
@@ -117,6 +140,7 @@ var %s = struct {
 `, coverVar)
 
 	total := len(ctx.branches)
+	//fmt.Fprintf(fd, "var e = coverage.WriteMeta(nil)\n")
 	fmt.Fprintf(fd, "var %s = %sCov {\n", gobcoVar, ctx.pkg)
 	fmt.Fprintf(fd, "\tTCount: make([]int, %d),\n", total)
 	fmt.Fprintf(fd, "\tFCount: make([]int, %d),\n", total)
