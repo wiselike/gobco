@@ -101,7 +101,7 @@ func copyFile(sourcePath, destinationPath string) error {
 	return nil
 }
 
-func getFd(out, fileName string) (*os.File, error) {
+func getFd(out, fileName string, i int) (*os.File, error) {
 	if out == "" {
 		if strings.Contains(fileName, "main") {
 			worker := os.Getenv("WORK")
@@ -112,11 +112,16 @@ func getFd(out, fileName string) (*os.File, error) {
 	
 		
 		worker := os.Getenv("WORK")
-		fileName = filepath.Base(fileName)
-		extension := filepath.Ext(fileName)
-		fileNameWithoutExt := fileName[:len(fileName)-len(extension)]
+		fileNameShort := filepath.Base(fileName)
+		extension := filepath.Ext(fileNameShort)
+		fileNameWithoutExt := fileNameShort[:len(fileNameShort)-len(extension)]
 		if extension==".go" {
-			return os.Create(filepath.Join(worker, fileNameWithoutExt+".cover.go"))
+			if i==0 {
+				return os.Create(filepath.Join(worker, fileNameWithoutExt+".cover.go"))
+			} else {
+				copyFile(filepath.Join(worker, fileName), filepath.Join(worker, fileNameWithoutExt+".cover.go"))
+				return os.Stdout, nil
+			}
 		}
 
 		return os.Stdout, nil
@@ -141,10 +146,14 @@ func runGobco() {
 	if *version != "" {
 		fmt.Println("cover version go1.13.1")
 	} else {
-		fd, err := getFd(*outPtr, files[0])
-		err = instrument.Instrument(files[0], fd, *coverVar)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "%v\n", err)
+		for i , file := range files {
+			fd, err := getFd(*outPtr, file, i)
+			if i==0 {
+				err = instrument.Instrument(file, fd, *coverVar)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "%v\n", err)
+				}
+			}
 		}
 	}
 }
