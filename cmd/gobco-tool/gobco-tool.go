@@ -116,12 +116,12 @@ func getFd(out, fileName string, i int) (*os.File, error) {
 		extension := filepath.Ext(fileNameShort)
 		fileNameWithoutExt := fileNameShort[:len(fileNameShort)-len(extension)]
 		if extension==".go" {
-			if i==0 {
+			//if i==0 {
 				return os.Create(filepath.Join(worker, fileNameWithoutExt+".cover.go"))
-			} else {
-				copyFile(filepath.Join(worker, fileName), filepath.Join(worker, fileNameWithoutExt+".cover.go"))
-				return os.Stdout, nil
-			}
+			//} else {
+			//	copyFile(filepath.Join(worker, fileName), filepath.Join(worker, fileNameWithoutExt+".cover.go"))
+			//	return os.Stdout, nil
+			//}
 		}
 
 		return os.Stdout, nil
@@ -148,12 +148,12 @@ func runGobco() {
 	} else {
 		for i , file := range files {
 			fd, err := getFd(*outPtr, file, i)
-			if i==0 {
-				err = instrument.Instrument(file, fd, *coverVar)
+			//if i==0 {
+				err = instrument.Instrument(file, fd, fmt.Sprintf("%s_%d", *coverVar, i), i==0)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "%v\n", err)
 				}
-			}
+			//}
 		}
 	}
 }

@@ -105,14 +105,14 @@ func addImport(f *ast.File, pkgPath string) {
 	f.Decls = append([]ast.Decl{importDecl}, f.Decls...)
 }
 
-func Instrument(name string, fd *os.File, coverVar string) error {
+func Instrument(name string, fd *os.File, coverVar string, firstfile bool) error {
 	// Create the AST by parsing src.
 	fset := token.NewFileSet() // positions are relative to fset
 	f, err := parser.ParseFile(fset, name, nil, parser.ParseComments)
 	if err != nil {
 		return err
 	}
-	//addImport(f, "runtime/coverage")
+
 
 	ctx := context{
 		file: f,
@@ -131,6 +131,7 @@ func Instrument(name string, fd *os.File, coverVar string) error {
 
 
 	printer.Fprint(fd, fset, f)
+
 	fmt.Fprintf(fd, `
 var %s = struct {
 	Count []uint32
@@ -139,8 +140,9 @@ var %s = struct {
 } {}
 `, coverVar)
 
+
 	total := len(ctx.branches)
-	//fmt.Fprintf(fd, "var e = coverage.WriteMeta(nil)\n")
+
 	fmt.Fprintf(fd, "var %s = %sCov {\n", gobcoVar, ctx.pkg)
 	fmt.Fprintf(fd, "\tTCount: make([]int, %d),\n", total)
 	fmt.Fprintf(fd, "\tFCount: make([]int, %d),\n", total)
@@ -152,6 +154,7 @@ var %s = struct {
 	}
 	fmt.Fprintf(fd, "\t},\n")
 	fmt.Fprintf(fd, "}\n")
+
 	fmt.Fprintf(fd, `
 func init() {
 	%sRegisterCov(&%s, "%s")

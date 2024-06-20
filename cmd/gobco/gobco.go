@@ -32,7 +32,7 @@ func main() {
 		err = html.ToHtml(profile, fd)
 	} else {
 		file := flag.Arg(0)
-		err = instrument.Instrument(file, fd, *coverVar)
+		err = instrument.Instrument(file, fd, *coverVar, true)
 	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
